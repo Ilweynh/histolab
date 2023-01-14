@@ -85,7 +85,7 @@ class BiggestTissueBoxMask(BinaryMask):
 
     @lru_cache(maxsize=100)
     def _mask(self, slide) -> np.ndarray:
-        """Return the thumbnail box mask containing the largest contiguous tissue area.
+        """Return the tissue box mask containing the largest contiguous tissue area.
 
         Parameters
         ----------
@@ -96,23 +96,24 @@ class BiggestTissueBoxMask(BinaryMask):
         -------
         mask: np.ndarray
             Binary mask of the box containing the largest contiguous tissue area.
-            The dimensions are those of the thumbnail.
+            The dimensions are 1/32 of the slide dimensions.
         """
-        thumb = slide.thumbnail
+        scaled_slide = slide.scaled_image()
 
         if len(self.custom_filters) == 0:
             composition = FiltersComposition(Slide)
         else:
             composition = FiltersComposition(Compose, *self.custom_filters)
 
-        thumb_mask = composition.tissue_mask_filters(thumb)
-        regions = regions_from_binary_mask(thumb_mask)
+        scaled_mask = composition.tissue_mask_filters(scaled_slide)
+
+        regions = regions_from_binary_mask(scaled_mask)
         biggest_region = self._regions(regions, n=1)[0]
         biggest_region_coordinates = region_coordinates(biggest_region)
-        thumb_bbox_mask = rectangle_to_mask(
-            thumb.size[::-1], biggest_region_coordinates
+        scaled_bbox_mask = rectangle_to_mask(
+            scaled_slide.size[::-1], biggest_region_coordinates
         )
-        return thumb_bbox_mask
+        return scaled_bbox_mask
 
     @staticmethod
     def _regions(regions: List[Region], n: int = 1) -> List[Region]:
@@ -180,7 +181,7 @@ class TissueMask(BinaryMask):
         Returns
         -------
         np.ndarray
-            Binary mask of the tissue area. The dimensions are those of the thumbnail in
+            Binary mask of the tissue area. The dimensions are 1/32 of the original in
             case ``obj`` is a ``Slide``, otherwise they are the same as the tile.
 
         See Also
@@ -193,7 +194,7 @@ class TissueMask(BinaryMask):
     @lru_cache(maxsize=100)
     @method_dispatch
     def _mask(self, slide) -> np.ndarray:
-        """Return the thumbnail binary mask of the tissue area.
+        """Return a scaled version of the binary mask of the tissue area.
 
         Parameters
         ----------
@@ -203,9 +204,10 @@ class TissueMask(BinaryMask):
         Returns
         -------
         mask: np.ndarray
-            Binary mask of the tissue area. The dimensions are those of the thumbnail.
+            Binary mask of the tissue area. The dimensions are 1/32 of the slide
+            dimensions.
         """
-        thumb = slide.thumbnail
+        scaled_slide = slide.scaled_image()
 
         # Generate appropriate composition of filter
         if len(self.custom_filters) == 0:
@@ -213,13 +215,13 @@ class TissueMask(BinaryMask):
         else:
             composition = FiltersComposition(Compose, *self.custom_filters)
 
-        thumb_mask = composition.tissue_mask_filters(thumb)
-        return thumb_mask
+        scaled_mask = composition.tissue_mask_filters(scaled_slide)
+        return scaled_mask
 
     @lru_cache(maxsize=100)
     @_mask.register(Tile)
     def _(self, tile: Tile) -> np.ndarray:
-        """Return the thumbnail binary mask of the tissue area.
+        """Return a scaled version of the binary mask of the tissue area.
 
         Parameters
         ----------
@@ -229,7 +231,8 @@ class TissueMask(BinaryMask):
         Returns
         -------
         mask: np.ndarray
-            Binary mask of the tissue area. The dimensions are those of the tile.
+            Binary mask of the tissue area. The dimensions are 1/32 of the slide
+            dimensions.
         """
 
         # Check if calculating a customized mask is required.
