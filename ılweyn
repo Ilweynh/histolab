@@ -1,0 +1,27 @@
+python
+import turtle
+
+# Ekranı oluştur
+ekran = turtle.Screen()
+ekran.bgcolor("pink")
+
+# Yıldızlı çiçeği çiz
+yildiz_turtle = turtle.Turtle()
+yildiz_turtle.shape("turtle")
+yildiz_turtle.color("yellow")
+
+for _ in range(5):
+    yildiz_turtle.forward(100)
+    yildiz_turtle.right(144)
+
+# Pembe çiçek yapraklarını çiz
+cicek_turtle = turtle.Turtle()
+cicek_turtle.shape("turtle")
+cicek_turtle.color("pink")
+
+for _ in range(36):
+    cicek_turtle.forward(50)
+    cicek_turtle.right(170)
+
+# Çizim penceresini kapat
+ekran.exitonclick()
